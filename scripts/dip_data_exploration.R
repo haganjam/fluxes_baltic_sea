@@ -49,6 +49,20 @@ dip_ana %>%
   summarise(n = n()) %>%
   filter(n > 1)
 
+# how many data points are there in the different basins?
+dip_ana %>%
+  group_by(basin) %>%
+  summarise(n = n())
+
+dip_ana %>%
+  filter(basin == "GOB") %>%
+  View()
+
+# what is the spread of accumulation and other basin types
+dip_ana %>%
+  group_by(basin, BT) %>%
+  summarise(n = n())
+
 
 # we don't want to lose those nine data points...
 # let's see how prevalent they are...
@@ -97,12 +111,51 @@ dip_ana %>%
          ChlA.inv = log10(1 + ChlA.inv)) %>%
   pairs()
 
-lm(log10(1 + ChlA.inv) ~ log10(1+BW_O2) + OC.inv + CN,
+lm(log10(1 + ChlA.inv) ~ basin,
    data = dip_ana) %>%
   summary()
 
+ggplot(data = dip_ana,
+       mapping = aes(x = basin, y = log(1+ChlA.inv) )) +
+  geom_jitter()
 
 
+# the phosphate flux increases under low oxygen conditions
+# but only when marine organic matter dominates and the material is fresh
+
+hist(log(1 + dip_ana$DIP))
+hist(dip_ana$DIP)
+
+
+# simulate what these continuous interaction terms mean
+df <- as.data.frame(replicate(n = 3, expr = rnorm(n = 10, mean = 10, sd = 2)))
+df
+
+
+
+ggplot(data = dip_ana %>%
+         mutate(OC.inv = if_else(OC.inv <= mean(OC.inv, na.rm = TRUE), "A", "B")),
+       mapping = aes(x = log(1 + BW_O2), y = DIP, colour = OC.inv)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(data = dip_ana %>%
+         mutate(S = if_else(S <= mean(S, na.rm = TRUE), "A", "B")),
+       mapping = aes(x = log(1 + BW_O2), y = DIP, colour = S)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+lm1 <- lm(DIP ~ log(1 + BW_O2) + log(1 + BW_O2):OC.inv:S, data = dip_ana)
+summary(lm1)
+
+lm2 <- lm(DIP ~ log(1 + BW_O2), data = dip_ana)
+
+lm3 <- lm(DIP ~ 1, data = dip_ana)
+
+AIC(lm1)
+AIC(lm2)
+AIC(lm3)
 
 
 
