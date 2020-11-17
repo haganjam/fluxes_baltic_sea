@@ -8,7 +8,6 @@ library(readr)
 library(tidyr)
 library(tibble)
 library(here)
-library(mice)
 library(ggplot2)
 
 # load in the Baltic Sea data
