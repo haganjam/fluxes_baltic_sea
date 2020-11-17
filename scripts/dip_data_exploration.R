@@ -29,10 +29,12 @@ dip_ana <-
   dip_ana %>%
   filter(!is.na(DIP))
 
-# remove rows where all the explanatory have NAs
+nrow(dip_ana)
+
+# remove rows where all the explanatory have NAs i.e. where there are no values for the explanatory variables
 dip_ana <- 
   dip_ana %>%
-  filter_at(vars(S, BW_O2, ChlA.inv, OC.inv, CN), any_vars(!is.na(.)) )
+  filter_at(vars(S, BW_O2, ChlA.inv, OC.inv, CN), any_vars(!is.na(.)) ) # i.e. are any of these variables not NA?
 
 # check how many data points have complete data
 dip_ana %>%
@@ -63,12 +65,14 @@ dip_ana %>%
   group_by(basin, BT) %>%
   summarise(n = n())
 
+# subset out the rows where there is complete data
+dip_comp <- 
+  dip_ana %>%
+  filter_at(vars(S, BW_O2, ChlA.inv, OC.inv, CN), all_vars(!is.na(.)))
 
-# we don't want to lose those nine data points...
-# let's see how prevalent they are...
 
 # check the variable distributions
-dip_ana %>%
+dip_comp %>%
   pivot_longer(cols = c("S", "BW_O2", "ChlA.inv", "OC.inv", "CN"),
                names_to = "var",
                values_to = "val") %>%
@@ -78,10 +82,10 @@ dip_ana %>%
   facet_wrap(~var, scales = "free")
 
 # very strange value for ChlA.inv
-range(dip_ana$ChlA.inv[!is.na(dip_ana$ChlA.inv) ])
+range(dip_comp$ChlA.inv)
 
 # log-transform bw02 and chla.inv
-dip_ana %>%
+dip_comp %>%
   mutate(BW_O2 = log10(1 + BW_O2),
          ChlA.inv = log10(1 + ChlA.inv)) %>%
   pivot_longer(cols = c("S", "BW_O2", "ChlA.inv", "OC.inv", "CN"),
@@ -92,70 +96,48 @@ dip_ana %>%
   geom_histogram() +
   facet_wrap(~var, scales = "free")
 
+dip_comp <- 
+  dip_comp %>%
+  mutate(log_BW_O2 = log10(1 + BW_O2),
+         log_ChlA.inv = log10(1 + ChlA.inv))
+
+
 # BW_O2 is bimodal (need to be aware of this)
 ggplot(data = dip_ana,
          mapping = aes(x = BT, y = BW_O2, colour = basin)) +
   geom_jitter()
 
-# check the correlations among the variables
-dip_ana %>%
-  select(S, BW_O2, ChlA.inv, OC.inv, CN) %>%
-  mutate(BW_O2 = log10(1 + BW_O2),
-         ChlA.inv = log10(1 + ChlA.inv)) %>%
-  cor(use = "pairwise.complete.obs") %>%
+
+# create a hypoxic vs. non-hypoxic variable
+dip_comp <- 
+  dip_comp %>%
+  mutate(hypoxic = if_else(BW_O2 < 63, 1, 0))
+
+
+# investigate marine vs. terrestrial origins using PCA
+names(dip_comp)
+
+pca_1 <- prcomp(~ CN + log_ChlA.inv, data = dip_comp, center = TRUE, scale = TRUE)
+summary(pca_1)
+
+plot(dip_comp$CN, dip_comp$log_ChlA.inv)
+
+eigs <- (pca_1$sdev)^2
+plot(eigs/sum(eigs))
+
+ggplot(data = data.frame(pca_1$x),
+       mapping = aes(x = PC1, y = PC2)) +
+  geom_point()
+
+cbind(pca_1$x, select(dip_comp, CN, log_ChlA.inv)) %>%
+  cor() %>%
   corrplot::corrplot(method = "number")
 
-dip_ana %>%
-  select(S, BW_O2, ChlA.inv, OC.inv, CN) %>%
-  mutate(BW_O2 = log10(1 + BW_O2),
-         ChlA.inv = log10(1 + ChlA.inv)) %>%
-  pairs()
 
-lm(log10(1 + ChlA.inv) ~ basin,
-   data = dip_ana) %>%
-  summary()
-
-ggplot(data = dip_ana,
-       mapping = aes(x = basin, y = log(1+ChlA.inv) )) +
-  geom_jitter()
-
-
-# the phosphate flux increases under low oxygen conditions
-# but only when marine organic matter dominates and the material is fresh
-
-hist(log(1 + dip_ana$DIP))
-hist(dip_ana$DIP)
-
-
-# simulate what these continuous interaction terms mean
-df <- as.data.frame(replicate(n = 3, expr = rnorm(n = 10, mean = 10, sd = 2)))
-df
-
-
-
-ggplot(data = dip_ana %>%
-         mutate(OC.inv = if_else(OC.inv <= mean(OC.inv, na.rm = TRUE), "A", "B")),
-       mapping = aes(x = log(1 + BW_O2), y = DIP, colour = OC.inv)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-
-ggplot(data = dip_ana %>%
-         mutate(S = if_else(S <= mean(S, na.rm = TRUE), "A", "B")),
-       mapping = aes(x = log(1 + BW_O2), y = DIP, colour = S)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-
-
-lm1 <- lm(DIP ~ log(1 + BW_O2) + log(1 + BW_O2):OC.inv:S, data = dip_ana)
-summary(lm1)
-
-lm2 <- lm(DIP ~ log(1 + BW_O2), data = dip_ana)
-
-lm3 <- lm(DIP ~ 1, data = dip_ana)
-
-AIC(lm1)
-AIC(lm2)
-AIC(lm3)
+# fit a preliminary model
+ggplot(data = dip_comp,
+       mapping = aes(x = log10(1+DIP), colour = as.character(hypoxic) )) +
+  geom_histogram()
 
 
 
