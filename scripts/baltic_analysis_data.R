@@ -10,7 +10,8 @@ library(tibble)
 library(here)
 
 # load in the Baltic Sea data
-baltic_raw <- read_csv(file = here("data/BalticData.csv"))
+baltic_raw <- read_csv(file = here("data/BalticData_v2.csv"))
+
 
 # reorganise the data to make it tidy
 
@@ -35,12 +36,23 @@ var_names <-
   select(-basin, -BT, -code, -year, -unit, -deployment) %>%
   names()
 
+baltic_ana %>%
+  group_by(basin, BT, code, year, deployment) %>%
+  summarise(units = length(unique(unit)))
+
 baltic_ana <- 
   baltic_ana %>%
   group_by(basin, BT, code, year, deployment) %>%
   summarise(across(.cols = all_of(var_names), ~mean(., na.rm = TRUE)), .groups = "drop")
 
+
+# summarise variables by deployment because multiple deployments made on same day at same station
+baltic_ana <- 
+  baltic_ana %>%
+  group_by(basin, BT, code, year) %>%
+  summarise(across(.cols = all_of(var_names), ~mean(., na.rm = TRUE)), .groups = "drop")
+
 # write this into a .csv for the analysis data
-write_csv(x = baltic_ana, path = here("data/Baltic_data_analysis.csv"))
+write_csv(x = baltic_ana, file = here("data/Baltic_data_analysis.csv"))
 
 
