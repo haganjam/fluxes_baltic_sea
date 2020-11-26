@@ -20,8 +20,8 @@ names(dip_raw)
 # subset out the relevant columns
 dip_ana <- 
   dip_raw %>%
-  select(basin, BT, code, year, deployment,
-         S, BW_O2, ChlA.inv, OC.inv, CN, DIP)
+  select(basin, BT, code, year,
+         BW_O2, ChlA.inv, OC.inv, CN, DIP)
 
 # subset out the rows where there are no DIP values available
 dip_ana <- 

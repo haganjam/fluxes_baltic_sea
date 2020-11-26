@@ -29,12 +29,13 @@ baltic_ana <-
               names_from = c("var"),
               values_from = c("value"))
 
-
 # summarise variables by unit because this is a procedural replicate
 var_names <- 
   baltic_ana %>%
   select(-basin, -BT, -code, -year, -unit, -deployment) %>%
   names()
+
+var_names
 
 baltic_ana %>%
   group_by(basin, BT, code, year, deployment) %>%
