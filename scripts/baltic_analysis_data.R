@@ -27,7 +27,9 @@ baltic_ana <-
   baltic_ana %>%
   pivot_wider(id_cols = c("basin", "BT", "code", "year", "unit", "deployment"),
               names_from = c("var"),
-              values_from = c("value"))
+              values_from = c("value")) %>% 
+  mutate(CN = OC.inv/TN.inv)
+
 
 # summarise variables by unit because this is a procedural replicate
 var_names <- 
