@@ -121,6 +121,25 @@ View(dip_comp)
 hist(dip_comp$DIP) # decent distribution
 
 
+# check variable distributions one more time
+dip_comp %>%
+  pivot_longer(cols = c("DIP", "CN"),
+               names_to = "var",
+               values_to = "val") %>%
+  ggplot(data = .,
+         mapping = aes(x = val, fill = as.character(BT) )) +
+  geom_histogram() +
+  facet_wrap(~var, scales = "free")
+
+ggplot(data = dip_comp,
+       mapping = aes(x = basin, y = DIP, colour = BT)) +
+  geom_jitter()
+
+# check BT distribution in the different basins
+dip_comp %>%
+  group_by(basin, BT) %>%
+  summarise(n = n())
+
 # write these data into a file to run the models on
 write_csv(x = dip_comp, file = here("data/baltic_flux_model_data.csv"))
 
