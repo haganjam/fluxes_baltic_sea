@@ -10,7 +10,7 @@ library(tibble)
 library(here)
 
 # load in the Baltic Sea data
-baltic_raw <- read_csv(file = here("data/BalticData_v2.csv"))
+baltic_raw <- read_csv(file = here("data/BalticDataJames_v4.csv"))
 
 
 # reorganise the data to make it tidy
@@ -56,6 +56,6 @@ baltic_ana <-
   summarise(across(.cols = all_of(var_names), ~mean(., na.rm = TRUE)), .groups = "drop")
 
 # write this into a .csv for the analysis data
-write_csv(x = baltic_ana, file = here("data/Baltic_data_analysis.csv"))
+write_csv(x = baltic_ana, file = here("data/baltic_flux_analysis_data.csv"))
 
 
