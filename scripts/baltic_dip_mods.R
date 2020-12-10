@@ -51,9 +51,9 @@ lm.comp <- function(data, resp, e.vars) {
 # define models to test
 exp.vars <- list(c("1"),
                  c("1", "BT"),
-                 c("1", "log_BW_O2"),
-                 c("1", "log_BW_O2", "CN"),
-                 c("1", "log_BW_O2*CN"))
+                 c("1", "BT", "log_BW_O2"),
+                 c("1", "BT", "log_BW_O2", "CN"),
+                 c("1", "BT", "log_BW_O2*CN"))
 
 # run these five different models
 lm.out <- lm.comp(data = dip.mod, resp = "DIP", e.vars = exp.vars)
