@@ -64,5 +64,41 @@ lm.out %>%
   View()
 
 
+# examine the best model to see if the predictions match
+lm.x <- lm(DIP ~ BT + log_BW_O2*CN, data = dip.mod)
 
+# get coefficients from this model
+lm.x.c <- lm.x$coefficients
+
+
+# H1: DIP should decrease with bottom water oxygen where the material is of marine origin 
+
+# hold cn at low values i.e. marine and we vary bottom oxygen
+range(dip.mod$CN)
+eg <- expand.grid(log_BW_O2 = seq(0, 2.5, 0.5),
+            CN = c(7.5) )
+
+m <- lm.x.c[1] + lm.x.c[2]*(0) + lm.x.c[3]*eg$log_BW_O2 + lm.x.c[4]*(eg$CN) 
+i <- lm.x.c[5]*eg$log_BW_O2*(eg$CN) 
+
+# dip decreases with log_BW_O2 when CN is low, in accumulation basins
+m+i
+
+# the model predicts that DIP decreases with bottom water oxygen when the material is of marine origin (i.e. low CN)
+
+
+# H1a: DIP should not change with bottom water oxygen when the material is of terrestrial origin (i.e. high CN)
+
+# hold cn at high values i.e. non-marine
+range(dip.mod$CN)
+eg <- expand.grid(log_BW_O2 = seq(0, 2.5, 0.5),
+                  CN = c(12) )
+
+m <- lm.x.c[1] + lm.x.c[2]*(0) + lm.x.c[3]*eg$log_BW_O2 + lm.x.c[4]*(eg$CN) 
+i <- lm.x.c[5]*eg$log_BW_O2*(eg$CN) 
+
+# dip increases with log_BW_O2 when CN is high (i.e. non-marine), in accumulation basins
+m+i
+
+# the model predicts that DIP increases slightly with bottom water oxygen when the material is of terrestrial origin (i.e. high CN)
 
