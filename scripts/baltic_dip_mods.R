@@ -24,11 +24,10 @@ dip.mod %>%
   summarise(n = n()) %>%
   View()
 
-# need random effects to account for multiple measurements at a single station in different years
+# we probably need to account for multiple replicates between years at a station
+# can't use random effects because too many stations only have one sample
 
-lmm.x <- lmer(DIP ~ BT + log_BW_O2*CN + (1|code), data = dip.mod)
-
-# run sensitivity analysis on pseudoreplicates
+# option 1: run sensitivity analysis on pseudoreplicates
 sens <- "random.sample"
 sens <- "average"
 
@@ -49,7 +48,6 @@ if(sens == "random.sample") {
   
 }
 
-View(dip.mod)
 
 # set up a function to run different models that can then be compared
 lm.comp <- function(data, resp, e.vars) {
@@ -175,7 +173,6 @@ plot(high.cn$log_BW_O2, predict(lm.x, newdata = high.cn))
 # this model shows:
 # dip increases with log_BW_O2 when CN is low, in accumulation basins
 # if you look at the y-axis scale, the effect is very weak
-
 
 
 
