@@ -7,6 +7,8 @@ library(dplyr)
 library(readr)
 library(here)
 library(ggplot2)
+library(lme4)
+library(nlme)
 
 # install libraries where functions are called from
 if( (("broom" %in% installed.packages()[,1]) & ("viridis" %in% installed.packages()[,1]))  == FALSE) {
@@ -16,6 +18,38 @@ if( (("broom" %in% installed.packages()[,1]) & ("viridis" %in% installed.package
 # load in the Baltic Sea data
 dip.mod <- read_csv(file = here("data/baltic_flux_model_data.csv"))
 
+# check how many data points there are per station
+dip.mod %>%
+  group_by(code) %>%
+  summarise(n = n()) %>%
+  View()
+
+# need random effects to account for multiple measurements at a single station in different years
+
+lmm.x <- lmer(DIP ~ BT + log_BW_O2*CN + (1|code), data = dip.mod)
+
+# run sensitivity analysis on pseudoreplicates
+sens <- "random.sample"
+sens <- "average"
+
+if(sens == "random.sample") {
+  
+  dip.mod <- 
+    dip.mod %>%
+    group_by(code) %>%
+    slice_sample(n = 1) 
+  
+} else if (sens == "average") {
+  
+  dip.mod <-  
+    dip.mod %>%
+    group_by(basin, BT, code) %>%
+    summarise(across(.cols = c("log_BW_O2", "CN", "DIP"), 
+                     ~mean(.x, na.rm = TRUE) ), .groups = "drop")
+  
+}
+
+View(dip.mod)
 
 # set up a function to run different models that can then be compared
 lm.comp <- function(data, resp, e.vars) {
@@ -77,6 +111,8 @@ lm.x <- lm(DIP ~ BT + log_BW_O2*CN, data = dip.mod)
 lapply(c(1:4), function(x) {plot(lm.x, x)} )
 hist(residuals(lm.x))
 
+summary(lm.x)
+
 # get coefficients from this model
 lm.x.c <- lm.x$coefficients
 
@@ -117,7 +153,7 @@ low.cn <- expand.grid(log_BW_O2 = seq(0, 2.5, 0.25),
                       CN = c(7.5),
                       BT = c("A") ) # can also change to ET and see what happens
 
-# examine relationship between log_BW_O2 and the model predictoin when holding CN at low values and in accumulation basins
+# examine relationship between log_BW_O2 and the model prediction when holding CN at low values and in accumulation basins
 plot(low.cn$log_BW_O2, predict(lm.x, newdata = low.cn))
 
 # this model shows:
@@ -145,22 +181,4 @@ plot(high.cn$log_BW_O2, predict(lm.x, newdata = high.cn))
 
 
 
-
-# the model predicts that DIP decreases with bottom water oxygen when the material is of marine origin (i.e. low CN)
-
-
-# H1a: DIP should not change with bottom water oxygen when the material is of terrestrial origin (i.e. high CN)
-
-# hold cn at high values i.e. non-marine
-range(dip.mod$CN)
-eg <- expand.grid(log_BW_O2 = seq(0, 2.5, 0.5),
-                  CN = c(12) )
-
-m <- lm.x.c[1] + lm.x.c[2]*(0) + lm.x.c[3]*eg$log_BW_O2 + lm.x.c[4]*(eg$CN) 
-i <- lm.x.c[5]*eg$log_BW_O2*(eg$CN) 
-
-# dip increases with log_BW_O2 when CN is high (i.e. non-marine), in accumulation basins
-m+i
-
-# the model predicts that DIP increases slightly with bottom water oxygen when the material is of terrestrial origin (i.e. high CN)
 
